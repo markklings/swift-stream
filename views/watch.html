@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Watching - Swift Stream</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #000;
+    }
+  </style>
+</head>
+<body class="relative w-screen h-screen">
+
+  <!-- Auto-Hiding Back Button -->
+  <a 
+    id="auto-hide-back-btn"
+    href="/"
+    class="fixed top-6 left-6 z-50 flex items-center gap-2 px-5 py-2.5 bg-purple-950/90 hover:bg-purple-600 text-white rounded-full border border-purple-500/40 transition-all duration-300 opacity-0 pointer-events-none text-xs font-bold shadow-2xl"
+  >
+    ← Exit Player
+  </a>
+
+  <!-- Fullscreen Player Iframe (100vw x 100vh) -->
+  <iframe
+    id="player-iframe"
+    class="w-screen h-screen border-0 block"
+    allowfullscreen
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+    referrerpolicy="origin"
+  ></iframe>
+
+  <script>
+    const pathParts = window.location.pathname.split('/').filter(Boolean);
+    const type = pathParts[1] || 'movie';
+    const id = pathParts[2] || '27205';
+    const season = pathParts[3] || '1';
+    const episode = pathParts[4] || '1';
+
+    // Construct VidSrc Embed Route
+    const baseUrl = 'https://vidsrcme.ru/embed';
+    const routePath = type === 'movie' 
+      ? `${baseUrl}/movie/${id}` 
+      : `${baseUrl}/tv/${id}/${season}/${episode}`;
+
+    const queryParams = new URLSearchParams({ autoplay: '1', ds_lang: 'en', autonext: '1' }).toString();
+    document.getElementById('player-iframe').src = `${routePath}?${queryParams}`;
+    document.getElementById('auto-hide-back-btn').href = `/${type}/${id}`;
+
+    // Auto-Hide Exit Button Logic
+    const backBtn = document.getElementById('auto-hide-back-btn');
+    let fadeTimer;
+
+    function showButtonAndResetTimer() {
+      backBtn.classList.remove('opacity-0', 'pointer-events-none');
+      backBtn.classList.add('opacity-100', 'pointer-events-auto');
+
+      clearTimeout(fadeTimer);
+      fadeTimer = setTimeout(() => {
+        backBtn.classList.remove('opacity-100', 'pointer-events-auto');
+        backBtn.classList.add('opacity-0', 'pointer-events-none');
+      }, 2500);
+    }
+
+    window.addEventListener('mousemove', showButtonAndResetTimer);
+    backBtn.addEventListener('mouseenter', () => {
+      clearTimeout(fadeTimer);
+      backBtn.classList.remove('opacity-0', 'pointer-events-none');
+      backBtn.classList.add('opacity-100', 'pointer-events-auto');
+    });
+
+    // Record to LocalStorage for "Continue Watching"
+    async function saveWatchProgress() {
+      try {
+        const res = await fetch(`/api/details/${type}/${id}`);
+        const data = await res.json();
+
+        const historyItem = {
+          id,
+          type,
+          title: data.title || data.name,
+          poster_path: data.poster_path,
+          season: type === 'tv' ? season : null,
+          episode: type === 'tv' ? episode : null,
+          watchUrl: window.location.pathname,
+          updatedAt: Date.now()
+        };
+
+        let history = JSON.parse(localStorage.getItem('swiftstream_history') || '[]');
+        // Filter out existing record for this item to push updated one to the top
+        history = history.filter(item => !(item.id === id && item.type === type));
+        history.unshift(historyItem);
+
+        // Keep maximum 10 recent items
+        localStorage.setItem('swiftstream_history', JSON.stringify(history.slice(0, 10)));
+      } catch (err) {
+        console.error('Failed to save watch history:', err);
+      }
+    }
+
+    saveWatchProgress();
+    showButtonAndResetTimer();
+  </script>
+</body>
+</html>

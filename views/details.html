@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Details - Swift Stream</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background-color: #09090b; color: #f4f4f5; font-family: system-ui, -apple-system, sans-serif; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <a href="/" class="fixed top-6 left-6 z-50 px-4 py-2 bg-zinc-900 border border-zinc-800 hover:bg-purple-900/40 rounded-full text-xs font-bold transition-all">← Catalog</a>
+
+  <!-- Banner Background -->
+  <div id="details-hero" class="relative w-full min-h-[60vh] bg-cover bg-center flex items-end p-6 md:p-16">
+    <div class="absolute inset-0 bg-gradient-to-t from-[#09090b] via-[#09090b]/70 to-black/30"></div>
+
+    <div class="relative z-10 max-w-4xl space-y-4">
+      <div class="flex items-center gap-3">
+        <span id="badge-type" class="px-3 py-1 text-[10px] font-bold uppercase rounded-full bg-purple-600/30 text-purple-300 border border-purple-500/30 tracking-widest">Media</span>
+        <span id="rating-text" class="text-yellow-400 text-sm font-bold">★ 0.0</span>
+      </div>
+
+      <h1 id="title-text" class="text-4xl md:text-6xl font-black text-white">Loading...</h1>
+      <p id="overview-text" class="text-zinc-400 text-sm md:text-base leading-relaxed max-w-2xl"></p>
+
+      <div id="movie-play-container" class="pt-4">
+        <a id="play-now-btn" href="#" class="inline-flex items-center gap-3 px-8 py-3.5 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-full shadow-lg shadow-purple-900/40 transition-all">
+          <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          Watch Movie
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- TV Episodes Section (Hidden for Movies) -->
+  <section id="tv-episodes-section" class="hidden max-w-7xl mx-auto p-6 md:p-16 space-y-6">
+    <div class="flex items-center justify-between border-b border-purple-950/40 pb-4">
+      <h2 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-purple-500"></span> Episodes
+      </h2>
+      
+      <!-- Season Dropdown Selector -->
+      <select id="season-select" class="bg-zinc-900 border border-purple-500/30 text-white text-xs font-bold px-4 py-2 rounded-xl outline-none focus:border-purple-500">
+      </select>
+    </div>
+
+    <!-- Episode Cards Grid -->
+    <div id="episodes-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
+  </section>
+
+  <!-- Recommended Section -->
+  <section class="max-w-7xl mx-auto p-6 md:p-16 space-y-6">
+    <h2 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+      <span class="w-2 h-2 rounded-full bg-purple-500"></span> Recommended For You
+    </h2>
+    <div id="recommendations-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-5"></div>
+  </section>
+
+  <script>
+    const IMG_BASE = 'https://image.tmdb.org/t/p/w500';
+    const STILL_BASE = 'https://image.tmdb.org/t/p/w300';
+    const HERO_BASE = 'https://image.tmdb.org/t/p/original';
+
+    const pathParts = window.location.pathname.split('/').filter(Boolean);
+    const type = pathParts[0];
+    const id = pathParts[1];
+
+    async function loadDetails() {
+      const res = await fetch(`/api/details/${type}/${id}`);
+      const data = await res.json();
+
+      document.getElementById('details-hero').style.backgroundImage = `url('${HERO_BASE}${data.backdrop_path}')`;
+      document.getElementById('title-text').textContent = data.title || data.name;
+      document.getElementById('overview-text').textContent = data.overview;
+      document.getElementById('badge-type').textContent = type.toUpperCase();
+      document.getElementById('rating-text').textContent = `★ ${data.vote_average ? data.vote_average.toFixed(1) : 'N/A'}`;
+
+      if (type === 'movie') {
+        document.getElementById('play-now-btn').href = `/watch/movie/${id}`;
+      } else {
+        // Hide standard movie play button, activate TV Season/Episode Selector
+        document.getElementById('movie-play-container').classList.add('hidden');
+        setupTVShowSelector(data.seasons || []);
+      }
+
+      // Render Recommendations
+      const recs = (data.recommendations?.results || []).slice(0, 5);
+      document.getElementById('recommendations-container').innerHTML = recs.map(item => `
+        <a href="/${type}/${item.id}" class="bg-zinc-900 border border-zinc-800 hover:border-purple-500/50 rounded-2xl overflow-hidden hover:scale-105 transition-all group">
+          <img src="${item.poster_path ? IMG_BASE + item.poster_path : 'https://via.placeholder.com/300x450'}" class="w-full aspect-[2/3] object-cover" />
+          <div class="p-3">
+            <p class="text-xs font-bold text-white truncate">${item.title || item.name}</p>
+          </div>
+        </a>
+      `).join('');
+    }
+
+    async function setupTVShowSelector(seasons) {
+      const section = document.getElementById('tv-episodes-section');
+      const select = document.getElementById('season-select');
+      section.classList.remove('hidden');
+
+      // Filter valid seasons (excluding specials / season 0 if preferred)
+      const validSeasons = seasons.filter(s => s.season_number > 0);
+
+      select.innerHTML = validSeasons.map(s => `
+        <option value="${s.season_number}">Season ${s.season_number} (${s.episode_count} Episodes)</option>
+      `).join('');
+
+      select.onchange = (e) => fetchAndRenderEpisodes(e.target.value);
+
+      if (validSeasons.length > 0) {
+        fetchAndRenderEpisodes(validSeasons[0].season_number);
+      }
+    }
+
+    async function fetchAndRenderEpisodes(seasonNum) {
+      const grid = document.getElementById('episodes-grid');
+      grid.innerHTML = '<p class="text-zinc-500 text-xs">Loading episodes...</p>';
+
+      const res = await fetch(`/api/tv/${id}/season/${seasonNum}`);
+      const data = await res.json();
+      const episodes = data.episodes || [];
+
+      grid.innerHTML = episodes.map(ep => `
+        <a href="/watch/tv/${id}/${seasonNum}/${ep.episode_number}" class="bg-zinc-900 border border-zinc-800 hover:border-purple-500/60 rounded-xl overflow-hidden hover:scale-102 transition-all group flex flex-col">
+          <div class="relative aspect-video w-full bg-zinc-950 overflow-hidden">
+            <img src="${ep.still_path ? STILL_BASE + ep.still_path : 'https://via.placeholder.com/300x170'}" class="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+            <div class="absolute inset-0 bg-black/40 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+              <svg class="w-8 h-8 text-white fill-current opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            </div>
+            <span class="absolute bottom-2 left-2 px-2 py-0.5 text-[10px] font-black bg-black/80 rounded text-purple-400 border border-purple-500/30">
+              E${ep.episode_number}
+            </span>
+          </div>
+          <div class="p-3 space-y-1">
+            <p class="text-xs font-bold text-white truncate">${ep.name}</p>
+            <p class="text-[10px] text-zinc-500 line-clamp-2">${ep.overview || 'No overview available.'}</p>
+          </div>
+        </a>
+      `).join('');
+    }
+
+    loadDetails();
+  </script>
+</body>
+</html>
