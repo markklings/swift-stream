@@ -43,10 +43,10 @@
     const episode = pathParts[4] || '1';
 
     // Construct VidSrc Embed Route
-    const baseUrl = 'https://www.2embed.cc';
+    const baseUrl = 'https://vidsrc.buzz';
     const routePath = type === 'movie' 
-      ? `${baseUrl}/embed/${id}` 
-      : `${baseUrl}/embedtv/${id}&s=${season}&e=${episode}`;
+      ? `${baseUrl}/embed/movie/${id}` 
+      : `${baseUrl}/embed/tv/${id}/${season}/${episode}`;
 
     // const queryParams = new URLSearchParams({ autoplay: '1', ds_lang: 'en', autonext: '1' }).toString();
     document.getElementById('player-iframe').src = `${routePath}`;
