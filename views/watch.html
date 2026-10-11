@@ -48,8 +48,8 @@
       ? `${baseUrl}/movie/${id}` 
       : `${baseUrl}/tv/${id}/${season}/${episode}`;
 
-    const queryParams = new URLSearchParams({ autoplay: '1', ds_lang: 'en', autonext: '1' }).toString();
-    document.getElementById('player-iframe').src = `${routePath}?${queryParams}`;
+    // const queryParams = new URLSearchParams({ autoplay: '1', ds_lang: 'en', autonext: '1' }).toString();
+    document.getElementById('player-iframe').src = `${routePath}`;
     document.getElementById('auto-hide-back-btn').href = `/${type}/${id}`;
 
     // Auto-Hide Exit Button Logic
