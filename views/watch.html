@@ -47,7 +47,7 @@
     const baseUrl = 'https://cinesrc.st/embed';
     const routePath = type === 'movie' 
       ? `${baseUrl}/movie/${id}` 
-      : `${baseUrl}/tv/{id}?s={season}&e={episode}`;
+      : `${baseUrl}/tv/${id}?s=${season}&e=${episode}`;
 
     const queryParams = new URLSearchParams({ autoplay: '1', ds_lang: 'en', autonext: '1' }).toString();
     document.getElementById('player-iframe').src = `${routePath}?${queryParams}`;
