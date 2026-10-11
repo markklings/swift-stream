@@ -44,10 +44,10 @@
     const episode = pathParts[4] || '1';
 
     // Construct VidSrc Embed Route
-    const baseUrl = 'https://vidsrcme.ru/embed';
+    const baseUrl = 'https://cinesrc.st/embed';
     const routePath = type === 'movie' 
       ? `${baseUrl}/movie/${id}` 
-      : `${baseUrl}/tv/${id}/${season}/${episode}`;
+      : `${baseUrl}/tv/{id}?s={season}&e={episode}`;
 
     const queryParams = new URLSearchParams({ autoplay: '1', ds_lang: 'en', autonext: '1' }).toString();
     document.getElementById('player-iframe').src = `${routePath}?${queryParams}`;
