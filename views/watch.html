@@ -43,10 +43,10 @@
     const episode = pathParts[4] || '1';
 
     // Construct VidSrc Embed Route
-    const baseUrl = 'https://vidlink.pro';
+    const baseUrl = 'https://www.2embed.cc';
     const routePath = type === 'movie' 
-      ? `${baseUrl}/movie/${id}` 
-      : `${baseUrl}/tv/${id}/${season}/${episode}`;
+      ? `${baseUrl}/embed/${id}` 
+      : `${baseUrl}/embedtv/${id}&s=${season}&e=${episode}`;
 
     // const queryParams = new URLSearchParams({ autoplay: '1', ds_lang: 'en', autonext: '1' }).toString();
     document.getElementById('player-iframe').src = `${routePath}`;
